@@ -20,7 +20,7 @@
 #include "ncore/NCLog.h"
 //#include "nhrtap/NHRtapSenderIF.h"
 #include "rvc/CameradRvcMessageHandler.h"
-#include "rvc/CameradRvcEventDispatch.h"
+// #include "rvc/CameradRvcEventDispatch.h"
 #include "base/CameradThreadName.h"
 
 #undef LOG_TAG
@@ -239,37 +239,37 @@ CameradRvcMessageHandler::onReceiveMessage(const android::sp<Message> &msg) {
             }
             break;
         }
-        case Rvc_receiveRtapinfo: {
-            RtapDataMessage< NHRtapInfoRcvData>* RcvMsg = DOWNCAST((msg.get()), nutshell::Message,
-            nutshell::RtapDataMessage< NHRtapInfoRcvData>);
-            if (RcvMsg != NULL) {
-                NHRtapInfoRcvData rtapData;
-                StRvcFromRtapCmdDataInfo commonMsgData;
-                std::vector<BYTE>  temp;
-                RcvMsg->getData(&rtapData);    // Get MeterData from Ucom
-                commonMsgData.dwDataNum = rtapData.dwDataNum;
-                for (DWORD i = 0; i < rtapData.dwDataNum; i++)
-                   temp.push_back(rtapData.byData[i]);
-                commonMsgData.byData = temp;
-                notifyRvcinfofromRtap(commonMsgData);
-            } else {
-                ALOGE("CameradRvcMessageHandler DOWNCAST is failed!");
-            }
-            break;
-        }
-        case Rvc_listenerServiceDiedInform: {
-            RtapDataMessage<uint64_t>* rvcDeathMsg = DOWNCAST((msg.get()), nutshell::Message,
-                nutshell::RtapDataMessage<uint64_t>);
-            if (rvcDeathMsg != NULL) {
-                uint64_t cookie = 0;
-                rvcDeathMsg->getData(&cookie);
-                m_listenerMap.erase(static_cast<EnCameradRvcListenerID>(cookie));
-                ALOGD("CameradRvcMessageHandler MAP:erase serviceId:%d", static_cast<uint8_t>(cookie));
-            } else {
-                ALOGE("CameradRvcMessageHandler DOWNCAST is failed!");
-            }
-            break;
-        }
+        // case Rvc_receiveRtapinfo: {
+        //     RtapDataMessage< NHRtapInfoRcvData>* RcvMsg = DOWNCAST((msg.get()), nutshell::Message,
+        //     nutshell::RtapDataMessage< NHRtapInfoRcvData>);
+        //     if (RcvMsg != NULL) {
+        //         NHRtapInfoRcvData rtapData;
+        //         StRvcFromRtapCmdDataInfo commonMsgData;
+        //         std::vector<BYTE>  temp;
+        //         RcvMsg->getData(&rtapData);    // Get MeterData from Ucom
+        //         commonMsgData.dwDataNum = rtapData.dwDataNum;
+        //         for (DWORD i = 0; i < rtapData.dwDataNum; i++)
+        //            temp.push_back(rtapData.byData[i]);
+        //         commonMsgData.byData = temp;
+        //         notifyRvcinfofromRtap(commonMsgData);
+        //     } else {
+        //         ALOGE("CameradRvcMessageHandler DOWNCAST is failed!");
+        //     }
+        //     break;
+        // }
+        // case Rvc_listenerServiceDiedInform: {
+        //     RtapDataMessage<uint64_t>* rvcDeathMsg = DOWNCAST((msg.get()), nutshell::Message,
+        //         nutshell::RtapDataMessage<uint64_t>);
+        //     if (rvcDeathMsg != NULL) {
+        //         uint64_t cookie = 0;
+        //         rvcDeathMsg->getData(&cookie);
+        //         m_listenerMap.erase(static_cast<EnCameradRvcListenerID>(cookie));
+        //         ALOGD("CameradRvcMessageHandler MAP:erase serviceId:%d", static_cast<uint8_t>(cookie));
+        //     } else {
+        //         ALOGE("CameradRvcMessageHandler DOWNCAST is failed!");
+        //     }
+        //     break;
+        // }
         default:
             break;
     }
@@ -285,7 +285,7 @@ CameradRvcMessageHandler::onReceiveMessage(const android::sp<Message> &msg) {
 void
 CameradRvcMessageHandler::listenerServiceDiedInform(uint64_t cookie) {
     if (m_loopThread != NULL) {
-        sp<Message> msg = new RtapDataMessage<uint64_t>(Rvc_listenerServiceDiedInform, cookie);
+        sp<Message> msg = new CameraDataMessage<uint64_t>(Rvc_listenerServiceDiedInform, cookie);
         if (msg == NULL) {
             ALOGE("CameradRvcMessageHandler::listenerServiceDiedInform msg is NULL!");
         }
@@ -370,25 +370,25 @@ CameradRvcMessageHandler::unRegisterListener(EnCameradRvcListenerID serviceId) {
     return:     EnRvcFuncResult
     note:
 *********************************************************************************/
-EnRvcFuncResult
-CameradRvcMessageHandler::SendDataToRtap(const StRvcToRtapCmdDataInfo&  rvcData ) {
-    EnRvcFuncResult funcResult = EnRvcFuncResult::RVC_RESULT_ERR;
-    bool rvcSendResult = FALSE;
-    NHRtapInfoSendData sSendToRtapData;
-    memset(&sSendToRtapData, 0x00, sizeof(NHRtapInfoSendData));
-    if (rvcData.dwDataNum <= NH_URTAP_SIZE_D_NORMAL) {
-      sSendToRtapData.dwDataNum = rvcData.dwDataNum;
-      ALOGD("sSendToRtapData.dwDataNum : %d", sSendToRtapData.dwDataNum);
-      for (uint8_t i = 0; i < rvcData.dwDataNum; i++) {
-         sSendToRtapData.byData[i] = rvcData.byData[i];
-      }
-      rvcSendResult = NHRtapSenderIF::Instance()->sendrvcdata(sSendToRtapData);
-      if (NC_TRUE == rvcSendResult) {
-        funcResult = EnRvcFuncResult::RVC_RESULT_OK;
-      }
-    }
-    return funcResult;
-}
+// EnRvcFuncResult
+// CameradRvcMessageHandler::SendDataToRtap(const StRvcToRtapCmdDataInfo&  rvcData ) {
+//     EnRvcFuncResult funcResult = EnRvcFuncResult::RVC_RESULT_ERR;
+//     bool rvcSendResult = FALSE;
+//     NHRtapInfoSendData sSendToRtapData;
+//     memset(&sSendToRtapData, 0x00, sizeof(NHRtapInfoSendData));
+//     if (rvcData.dwDataNum <= NH_URTAP_SIZE_D_NORMAL) {
+//       sSendToRtapData.dwDataNum = rvcData.dwDataNum;
+//       ALOGD("sSendToRtapData.dwDataNum : %d", sSendToRtapData.dwDataNum);
+//       for (uint8_t i = 0; i < rvcData.dwDataNum; i++) {
+//          sSendToRtapData.byData[i] = rvcData.byData[i];
+//       }
+//       rvcSendResult = NHRtapSenderIF::Instance()->sendrvcdata(sSendToRtapData);
+//       if (NC_TRUE == rvcSendResult) {
+//         funcResult = EnRvcFuncResult::RVC_RESULT_OK;
+//       }
+//     }
+//     return funcResult;
+// }
 
 /*********************************************************************************
     classname:  CameradRvcMessageHandler
@@ -398,16 +398,16 @@ CameradRvcMessageHandler::SendDataToRtap(const StRvcToRtapCmdDataInfo&  rvcData 
     return:     none
     note:
 *********************************************************************************/
-void
-CameradRvcMessageHandler::onReceiveRvcDatafromRtap(const NHRtapInfoRcvData &rtapData) {
-    ALOGD("CameradRvcMessageHandler::onReceiveRvcDatafromRtap()");
-    if (m_loopThread != NULL) {
-        sp<Message> msg = new RtapDataMessage<NHRtapInfoRcvData>(Rvc_receiveRtapinfo, rtapData);
-        m_loopThread->postMessage(msg, 0);
-    } else {
-        ALOGE("CameradRvcMessageHandler::onReceiveRvcDatafromRtap m_loopThread is NULL");
-    }
-}
+// void
+// CameradRvcMessageHandler::onReceiveRvcDatafromRtap(const NHRtapInfoRcvData &rtapData) {
+//     ALOGD("CameradRvcMessageHandler::onReceiveRvcDatafromRtap()");
+//     if (m_loopThread != NULL) {
+//         sp<Message> msg = new RtapDataMessage<NHRtapInfoRcvData>(Rvc_receiveRtapinfo, rtapData);
+//         m_loopThread->postMessage(msg, 0);
+//     } else {
+//         ALOGE("CameradRvcMessageHandler::onReceiveRvcDatafromRtap m_loopThread is NULL");
+//     }
+// }
 
 /*********************************************************************************
     classname:  CameradRvcMessageHandler
@@ -418,27 +418,27 @@ CameradRvcMessageHandler::onReceiveRvcDatafromRtap(const NHRtapInfoRcvData &rtap
     note:
 *********************************************************************************/
 void
-CameradRvcMessageHandler::notifyRvcinfofromRtap(const StRvcFromRtapCmdDataInfo &rtapData) {
-    ALOGD("CameradRvcMessageHandler::notifyRvcinfofromRtap()");
-    CommonLisMap::iterator iter = m_listenerMap.begin();
-    for (; iter != m_listenerMap.end(); ++iter) {
-      if ((iter->second.listener != NULL)
-            && (iter->second.concernEventIds
-                & EnRvcEventId::EN_RTAP_TO_RVC_MSG)) {
-            auto ret = iter->second.listener->
-                         notifyRvcinfofromRtap(rtapData);
-            if (ret.isOk()) {
-                ALOGD("notify serviceID[%d]",
-                        static_cast<uint8_t>(iter->first));
-            } else {
-                ALOGE("HWBINDER ERROR :notify serviceID[%d] ",
-                        static_cast<uint8_t>(iter->first));
-            }
-        } else {
-            ALOGE("serviceID[%d] do not register this event",
-                    static_cast<uint8_t>(iter->first));
-        }
-    }
+CameradRvcMessageHandler::onRvcCameradReadyinfo(const EnOnRvcReadyInfo info) {
+    ALOGD("CameradRvcMessageHandler::onRvcCameradReadyinfo()");
+    // CommonLisMap::iterator iter = m_listenerMap.begin();
+    // for (; iter != m_listenerMap.end(); ++iter) {
+    //   if ((iter->second.listener != NULL)
+    //         && (iter->second.concernEventIds
+    //             & EnRvcEventId::EN_RTAP_TO_RVC_MSG)) {
+    //         auto ret = iter->second.listener->
+    //                      notifyRvcinfofromRtap(rtapData);
+    //         if (ret.isOk()) {
+    //             ALOGD("notify serviceID[%d]",
+    //                     static_cast<uint8_t>(iter->first));
+    //         } else {
+    //             ALOGE("HWBINDER ERROR :notify serviceID[%d] ",
+    //                     static_cast<uint8_t>(iter->first));
+    //         }
+    //     } else {
+    //         ALOGE("serviceID[%d] do not register this event",
+    //                 static_cast<uint8_t>(iter->first));
+    //     }
+    // }
 }
 
 }  // namespace nutshell

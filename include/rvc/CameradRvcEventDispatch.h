@@ -12,8 +12,8 @@
  */
 
 /**
- * @file RtapdRvcEventDispatch.h
- * @brief Declaration file of class RtapdRvcEventDispatch
+ * @file CameradRvcEventDispatch.h
+ * @brief Declaration file of class CameradRvcEventDispatch
  */
 
 #ifndef INCLUDE_RVC_CAMERADRVCEVENTDISPATCH_H_
@@ -33,39 +33,39 @@ namespace nutshell {
 /*********************************************************************************
                                 Class Declaration
 *********************************************************************************/
-class RtapdRvcMessageHandler;
+class CameradRvcMessageHandler;
 
 /*********************************************************************************
-    class name : RtapdRvcEventDispatch
-    purpose    : RtapdRvcEventDispatch implement method in Comd meter
+    class name : CameradRvcEventDispatch
+    purpose    : CameradRvcEventDispatch implement method in Comd meter
 *********************************************************************************/
-class RtapdRvcEventDispatch : public virtual NHRtapEventDispatch {
+class CameradRvcEventDispatch : public virtual NHRtapEventDispatch {
  public:
     /*************************************************************************/
     /**
-       RtapdRvcEventDispatch class constructor
+       CameradRvcEventDispatch class constructor
     */
     /*************************************************************************/
-    explicit RtapdRvcEventDispatch(NHRtapEventDispatch_TYPE type);
+    explicit CameradRvcEventDispatch(NHRtapEventDispatch_TYPE type);
 
     /*************************************************************************/
     /**
-        RtapdRvcEventDispatch class destructor
+        CameradRvcEventDispatch class destructor
     */
     /*************************************************************************/
-    virtual ~RtapdRvcEventDispatch();
+    virtual ~CameradRvcEventDispatch();
 
     /*************************************************************************/
     /**
         setHandler
 
-        @param  handler : [IN]  RtapdRvcEventDispatch sp pointer
+        @param  handler : [IN]  CameradRvcEventDispatch sp pointer
 
         @retval none
     */
     /*************************************************************************/
     void
-    setHandler(sp<RtapdRvcMessageHandler> handler);
+    setHandler(sp<CameradRvcMessageHandler> handler);
 
     /*************************************************************************/
     /**
@@ -80,8 +80,8 @@ class RtapdRvcEventDispatch : public virtual NHRtapEventDispatch {
     onReceiveRvcDatafromRtap(const NHRtapInfoRcvData &rtapData);
 
  private:
-    sp<RtapdRvcMessageHandler> m_handler;
-};  // EOF class RtapdRvcEventDispatch
+    sp<CameradRvcMessageHandler> m_handler;
+};  // EOF class CameradRvcEventDispatch
 
 }  // namespace nutshell
 

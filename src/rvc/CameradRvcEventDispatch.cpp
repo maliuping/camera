@@ -15,56 +15,56 @@
 *********************************************************************************/
 #include "log/log.h"
 #include "ncore/NCLog.h"
-#include "rvc/RtapdRvcEventDispatch.h"
-#include "rvc/RtapdRvcMessageHandler.h"
+#include "rvc/CameradRvcEventDispatch.h"
+#include "rvc/CameradRvcMessageHandler.h"
 
 #undef LOG_TAG
 #define LOG_TAG "rvc"
 
 namespace nutshell {
 /*********************************************************************************
-    classname:  RtapdRvcEventDispatch
-    funcname:   RtapdRvcEventDispatch
-    contents:   RtapdRvcEventDispatch constructor
+    classname:  CameradRvcEventDispatch
+    funcname:   CameradRvcEventDispatch
+    contents:   CameradRvcEventDispatch constructor
     parameter:  NHuComEventDispatch_TYPE type
     return:     none
     note:
 *********************************************************************************/
-RtapdRvcEventDispatch::RtapdRvcEventDispatch(NHRtapEventDispatch_TYPE type)
+CameradRvcEventDispatch::CameradRvcEventDispatch(NHRtapEventDispatch_TYPE type)
     : NHRtapEventDispatch(type)
     , m_handler(NULL) {
-    ALOGD("RtapdRvcEventDispatch constructor");
+    ALOGD("CameradRvcEventDispatch constructor");
 }
 
 /*********************************************************************************
-    classname:  RtapdRvcEventDispatch
-    funcname:   ~RtapdRvcEventDispatch
-    contents:   RtapdRvcEventDispatch distructor
+    classname:  CameradRvcEventDispatch
+    funcname:   ~CameradRvcEventDispatch
+    contents:   CameradRvcEventDispatch distructor
     parameter:  none
     return:     none
     note:
 *********************************************************************************/
-RtapdRvcEventDispatch::~RtapdRvcEventDispatch() {
-    ALOGD("RtapdRvcEventDispatch distructor");
+CameradRvcEventDispatch::~CameradRvcEventDispatch() {
+    ALOGD("CameradRvcEventDispatch distructor");
     m_handler = NULL;
 }
 
 /*********************************************************************************
-    classname:  RtapdRvcEventDispatch
+    classname:  CameradRvcEventDispatch
     funcname:   setHandler
     contents:   m_handler implement method
-    parameter:  sp<RtapdRvcMessageHandler> handler
+    parameter:  sp<CameradRvcMessageHandler> handler
     return:     none
     note:
 *********************************************************************************/
 void
-RtapdRvcEventDispatch::setHandler(sp<RtapdRvcMessageHandler> handler) {
+CameradRvcEventDispatch::setHandler(sp<CameradRvcMessageHandler> handler) {
     ALOGD("RvcEventDispatch::setHandler");
     m_handler = handler;
 }
 
 /*********************************************************************************
-    classname:  RtapdRvcEventDispatch
+    classname:  CameradRvcEventDispatch
     funcname:   onReceiveRvcDatafromRtap
     contents:   receive data from Rtap
     parameter:  const NHRtapInfoRcvData &rtapData
@@ -72,11 +72,11 @@ RtapdRvcEventDispatch::setHandler(sp<RtapdRvcMessageHandler> handler) {
     note:
 *********************************************************************************/
 void
-RtapdRvcEventDispatch::onReceiveRvcDatafromRtap(const NHRtapInfoRcvData &rtapData) {
+CameradRvcEventDispatch::onReceiveRvcDatafromRtap(const NHRtapInfoRcvData &rtapData) {
     if (m_handler != NULL) {
         m_handler->onReceiveRvcDatafromRtap(rtapData);
     } else {
-        ALOGE("RtapdRvcEventDispatch::onReceiveRvcDatafromRtap m_handler is NULL");
+        ALOGE("CameradRvcEventDispatch::onReceiveRvcDatafromRtap m_handler is NULL");
     }
 }
 

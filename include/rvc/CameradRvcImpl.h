@@ -25,7 +25,7 @@
 /*********************************************************************************
                                 include files
 *********************************************************************************/
-//#include <iauto/hardware/camerad/rvc/1.0/IRvc.h>
+#include <iauto/hardware/camerad/rvc/1.0/IRvc.h>
 
 namespace nutshell {
 /*********************************************************************************
@@ -108,13 +108,13 @@ class CameradRvcImpl : public IRvc {
     /**
         configCameraItem
 
-        @param  dispStatus : [IN]  data for configing guideline on/off 
+        @param  dispStatus : [IN]  data for configing guideline on/off
 
         @retval EnRvcFuncResult
     */
     /*************************************************************************/
     Return<EnRvcFuncResult>
-    configCameraItem(const EnNotifyGuideLineStatus&  dispStatus) override;
+    configCameraItem(const EnNotifyGuideLineStatus dispStatus) override;
 
  private:
     /*********************************************************************************

@@ -116,16 +116,16 @@ CameradRvcImpl::unRegisterListener(EnCameradRvcListenerID serviceId) {
     structname: CameradRvcImpl
     funcname:   configCameraItem
     contents:   implement method of camerad SendDataToRtap
-    parameter:  EnNotifyGuideLineStatus dispStatus 
+    parameter:  EnNotifyGuideLineStatus dispStatus
     return:     Return<EnRvcFuncResult>
 *********************************************************************************/
 Return<EnRvcFuncResult>
-CameradRvcImpl::configCameraItem(const EnNotifyGuideLineStatus&  dispStatus) {
+CameradRvcImpl::configCameraItem(const EnNotifyGuideLineStatus dispStatus) {
     EnRvcFuncResult funcResult = EnRvcFuncResult::RVC_RESULT_OK;
 
     if (m_handler != NULL) {
-        ALOGD("CameradRvcImpl::configCameraItem() HIDL OK;data number :%x", dispStatus);
-        funcResult = m_handler->configCameraItem(dispStatus);
+        ALOGD("CameradRvcImpl::configCameraItem() HIDL OK;data number :%hhx", dispStatus);
+        // funcResult = m_handler->configCameraItem(dispStatus);
     } else {
         ALOGE("CameradRvcImpl::configCameraItem() HIDL NG!!");
         funcResult = EnRvcFuncResult::RVC_RESULT_ERR;

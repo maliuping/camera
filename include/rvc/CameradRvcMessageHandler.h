@@ -39,7 +39,7 @@ namespace nutshell {
 /*********************************************************************************
                                 Class Declaration
 *********************************************************************************/
-class CameradRvcEventDispatch;
+// class CameradRvcEventDispatch;
 class CameradRvcMessageHandler;
 class CameradPrivateRvcMessageHandler;
 class CameradRvcImpl;
@@ -48,12 +48,12 @@ class CameradRvcImpl;
                         using element in other namespace
 *********************************************************************************/
 using ::android::sp;
-using ::iauto::hardware::rtapd::rvc::V1_0::IRvcListener;
-using ::iauto::hardware::rtapd::rvc::V1_0::EnRvcEventId;
-using ::iauto::hardware::rtapd::rvc::V1_0::EnRvcFuncResult;
-using ::iauto::hardware::rtapd::rvc::V1_0::EnCameradRvcListenerID;
+using ::iauto::hardware::camerad::rvc::V1_0::IRvcListener;
+using ::iauto::hardware::camerad::rvc::V1_0::EnRvcEventId;
+using ::iauto::hardware::camerad::rvc::V1_0::EnRvcFuncResult;
+using ::iauto::hardware::camerad::rvc::V1_0::EnCameradRvcListenerID;
 using ::iauto::hardware::camerad::rvc::V1_0::EnNotifyGuideLineStatus;
-
+using ::iauto::hardware::camerad::rvc::V1_0::EnOnRvcReadyInfo;
 
 /*********************************************************************************
                                 enum definiton
@@ -246,13 +246,13 @@ class CameradRvcMessageHandler : public android::RefBase {
         @retval EnRvcFuncResult
     */
     /*************************************************************************/
-    EnRvcFuncResult
-    SendDataToRtap(const StRvcToRtapCmdDataInfo& rvcData);
+    // EnRvcFuncResult
+    // SendDataToRtap(const StRvcToRtapCmdDataInfo& rvcData);
 
 
     /*************************************************************************/
     /**
-        notifyRvcinfofromRtap
+        onRvcCameradReadyinfo
 
         @param  rtapData : [IN]  data for sending to RVC service
 
@@ -260,13 +260,13 @@ class CameradRvcMessageHandler : public android::RefBase {
     */
     /*************************************************************************/
     void
-    notifyRvcinfofromRtap(const StRvcFromRtapCmdDataInfo &rtapData);
+    onRvcCameradReadyinfo(const EnOnRvcReadyInfo info);
 
  private:
     LooperThread* m_loopThread;
     sp<MessageHandler> m_privateMessageHandler;
     std::map<EnCameradRvcListenerID, StRvcListenerElement> m_listenerMap;
-    sp<CameradRvcEventDispatch> m_rvcEventDispatch;
+    // sp<CameradRvcEventDispatch> m_rvcEventDispatch;
     sp<CameradRvcDeathRecipientHandler> m_listenerDeathReceiver;
 
  private:
