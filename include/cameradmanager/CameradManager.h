@@ -22,7 +22,7 @@
 #include <utils/RefBase.h>
 
 namespace nutshell {
-//class NHRtapManager;
+class NHCameraManager;
 class CameradRvcImpl;
 
 class CameradManager : virtual public android::RefBase {
@@ -57,7 +57,7 @@ class CameradManager : virtual public android::RefBase {
 
  private:
     static android::sp<CameradManager> s_instance;
-    //NHRtapManager* m_uRtapManager;
+    NHCameraManager* m_uCameraManager;
     android::sp<CameradRvcImpl> m_rvcImpl;
 };
 

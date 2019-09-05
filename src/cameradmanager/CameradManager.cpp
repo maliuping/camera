@@ -12,11 +12,11 @@
  */
 #include "cutils/log.h"
 #include "rvc/CameradRvcImpl.h"
-//#include "nhrtap/NHRtapManager.h"
 #include "cameradmanager/CameradManager.h"
+#include "gpudisp/NHCameraManager.h"
 
 #undef LOG_TAG
-#define LOG_TAG "cameradmanager"
+#define LOG_TAG "SYS_HWH_CAMERA_MANAGER"
 
 namespace nutshell {
 
@@ -39,8 +39,10 @@ CameradManager* CameradManager::instance() {
     CameradManager Constructor
 */
 /*************************************************************************/
-CameradManager::CameradManager() {
-    //m_uRtapManager = NHRtapManager::Instance();
+CameradManager::CameradManager()
+    : m_uCameraManager(NULL)
+    , m_rvcImpl(NULL) {
+    m_uCameraManager = NHCameraManager::Instance();
     m_rvcImpl = new CameradRvcImpl();
 }
 
@@ -53,7 +55,7 @@ CameradManager::~CameradManager() {
    if (m_rvcImpl != NULL) {
         m_rvcImpl = NULL;
     }
-    //NHRtapManager::destroy();
+    NHCameraManager::destroy();
 }
 
 /*************************************************************************/
@@ -62,9 +64,9 @@ CameradManager::~CameradManager() {
 */
 /*************************************************************************/
 void CameradManager::init() {
-    //if (m_uRtapManager != NULL) {
-    //    m_uRtapManager->onAwake();
-    //}
+    if (m_uCameraManager != NULL) {
+       m_uCameraManager->onAwake();
+    }
     if (m_rvcImpl != NULL) {
         m_rvcImpl->onAwake();
         android::status_t cameradstatus = m_rvcImpl->registerAsService();

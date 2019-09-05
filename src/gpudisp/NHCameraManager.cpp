@@ -21,15 +21,19 @@
 #include <linux/input-event-codes.h>
 #include <unistd.h>
 #include <cstring>
+#include <log/log.h>
 
-#include "gpu_render.h"
-#include "drm_display.h"
-#include "osal.h"
 #include "ncore/NCLog.h"
 #include "ncore/NCAutoSync.h"
 #include "ncore/NCThread.h"
 #include "ncore/NCWaitObj.h"
 #include "ncore/NCTime.h"
+#include "gpudisp/gpu_render.h"
+#include "gpudisp/drm_display.h"
+#include "gpudisp/osal.h"
+#include "gpudisp/NHCameraManager.h"
+#include "gpudisp/NHCameraGpuDispThread.h"
+#include "base/CameradThreadName.h"
 
 #undef LOG_TAG
 #define LOG_TAG "SYS_HWH_CAMERA_NHCAMERA"
@@ -46,11 +50,12 @@ NCSyncObj NHCameraManager::s_cSync;
     Constructor
 
 *******************************************************************************/
-NHCameraManager::NHCameraManager() {
-    if (m_UCameraManagerInstance == NULL) {
-            m_UCameraManagerInstance = new NHCameraGpuDispThread();
-            if (NULL == m_UCameraManagerInstance) {
-                ALOGE("NHRtapManager: m_UCameraManagerInstance is NULL!");
+NHCameraManager::NHCameraManager()
+    : m_uCameraGpuDisp(NULL) {
+    if (m_uCameraGpuDisp == NULL) {
+            m_uCameraGpuDisp = new NHCameraGpuDispThread();
+            if (NULL == m_uCameraGpuDisp) {
+                SLOGE("NHRtapManager: m_uCameraGpuDisp is NULL!");
             }
         }
 }
@@ -61,7 +66,10 @@ NHCameraManager::NHCameraManager() {
 
 *******************************************************************************/
 NHCameraManager::~NHCameraManager() {
-
+    if (m_uCameraGpuDisp != NULL) {
+        delete m_uCameraGpuDisp;
+        m_uCameraGpuDisp = NULL;
+    }
 }
 
 /******************************************************************************
@@ -70,13 +78,13 @@ NHCameraManager::~NHCameraManager() {
 
 ******************************************************************************/
 NHCameraManager*
-NHCameraManager::Instance(VOID) {
-    ALOGE("NHCameraManager::Instance");
+NHCameraManager::Instance() {
+    SLOGE("NHCameraManager::Instance");
     s_cSync.syncStart();
     if (NULL == m_UCameraManagerInstance) {
         m_UCameraManagerInstance = new NHCameraManager();
         if (NULL == m_UCameraManagerInstance) {
-            ALOGE("NHCameraManager::Instance m_UCameraManagerInstance is NULL");
+            SLOGE("NHCameraManager::Instance m_UCameraManagerInstance is NULL");
         }
     }
     s_cSync.syncEnd();
@@ -106,7 +114,14 @@ NHCameraManager::destroy() {
 ******************************************************************************/
 VOID
 NHCameraManager::onAwake() {
-    ALOGD("NHCameraManager::onAwake");
+    SLOGD("NHCameraManager::onAwake");
+     // start gpudisp thread
+    if (m_uCameraGpuDisp != NULL) {
+        m_uCameraGpuDisp->setPriorityExt(NHTHREAD_PRI_HIGH);
+        m_uCameraGpuDisp->startThread(CAMERAD_NHCAMERA_GPUDISP_THREAD);
+    } else {
+        ALOGE("NHCameraManager::onAwake m_uCameraGpuDisp is NULL!");
+    }
 
 }
 

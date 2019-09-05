@@ -24,7 +24,7 @@
 #include "base/CameradThreadName.h"
 
 #undef LOG_TAG
-#define LOG_TAG "CameradRvc"
+#define LOG_TAG "SYS_HWH_CAMERA_RVC"
 
 namespace nutshell {
 

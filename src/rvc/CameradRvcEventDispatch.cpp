@@ -19,7 +19,7 @@
 #include "rvc/CameradRvcMessageHandler.h"
 
 #undef LOG_TAG
-#define LOG_TAG "rvc"
+#define LOG_TAG "SYS_HWH_CAMERA_RVC"
 
 namespace nutshell {
 /*********************************************************************************

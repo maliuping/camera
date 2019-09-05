@@ -18,17 +18,17 @@
 #endif
 namespace nutshell {
 /*========================================================================
-*   RTAPD
+*   CAMERAD
 ========================================================================*/
-// rtapd nhrtap receive data thread
-#define RTAPD_NHRTAP_RECEIVE_THREAD_DEF   NCTEXT("RTAPD_NHRTAP_RECEIVE_THREAD")
-const NCCHAR RTAPD_NHRTAP_RECEIVE_THREAD[] = RTAPD_NHRTAP_RECEIVE_THREAD_DEF;
+// camerad nhcamera gpudisp thread
+#define CAMERAD_NHCAMERA_GPUDISP_THREAD_DEF   NCTEXT("CAMERAD_NHCAMERA_GPUDISP_THREAD")
+const NCCHAR CAMERAD_NHCAMERA_GPUDISP_THREAD[] = CAMERAD_NHCAMERA_GPUDISP_THREAD_DEF;
 // rtapd nhrtap receive data service thread
-#define RTAPD_NHRTAP_PARSE_THREAD_DEF   NCTEXT("RTAPD_NHRTAP_PARSE_THREAD")
-const NCCHAR RTAPD_NHRTAP_PARSE_THREAD[] = RTAPD_NHRTAP_PARSE_THREAD_DEF;
+// #define RTAPD_NHRTAP_PARSE_THREAD_DEF   NCTEXT("RTAPD_NHRTAP_PARSE_THREAD")
+// const NCCHAR RTAPD_NHRTAP_PARSE_THREAD[] = RTAPD_NHRTAP_PARSE_THREAD_DEF;
 // romd nhrtap send data service thread
-#define RTAPD_NHRTAP_SEND_SERVICE_THREAD_DEF   NCTEXT("RTAPD_NHRTAP_SEND_SERVICE_THREAD")
-const NCCHAR RTAPD_NHRTAP_SEND_SERVICE_THREAD[] = RTAPD_NHRTAP_SEND_SERVICE_THREAD_DEF;
+// #define RTAPD_NHRTAP_SEND_SERVICE_THREAD_DEF   NCTEXT("RTAPD_NHRTAP_SEND_SERVICE_THREAD")
+// const NCCHAR RTAPD_NHRTAP_SEND_SERVICE_THREAD[] = RTAPD_NHRTAP_SEND_SERVICE_THREAD_DEF;
 
 /*========================================================================
 *   rvc service

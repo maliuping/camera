@@ -22,9 +22,9 @@
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 
-#include "gpu_render.h"
-#include "drm_display.h"
-#include "osal.h"
+#include "gpudisp/gpu_render.h"
+#include "gpudisp/drm_display.h"
+#include "gpudisp/osal.h"
 
 #define MAX_INPUT_NUM 6
 
@@ -151,7 +151,7 @@ static const char *get_egl_error(void)
 	}
 }
 
-static void check_gl_error(const char* op) 
+static void check_gl_error(const char* op)
 {
 	GLint error=0;
 	for (error = glGetError(); error; error = glGetError()) {
@@ -344,7 +344,7 @@ static const char vertexShader[] =
     "    gl_Position = position;\n"
     "}\n";
 
-static const char fragmentShader[] = 
+static const char fragmentShader[] =
 	"#extension GL_OES_EGL_image_external : enable\n"
 	"varying mediump vec2 outTexCoords;\n"
 	"uniform samplerExternalOES texture;\n"
@@ -464,10 +464,10 @@ static int _init_gl(MTK_GPU_REND_T *pctx)
 	// pctx->line_tex_loc = glGetAttribLocation(pctx->line_program, "texCoords");
 	pctx->line_color_loc = glGetUniformLocation(pctx->line_program, "line_color");
 	pctx->line_canvas_loc = glGetUniformLocation(pctx->line_program, "canvas");
-    LOG_ERR("Line program id=%d, pos=%d, texcoord=%d, color=%d, canvas=%d", 
-									program, 
-									pctx->line_pos_loc, 
-									pctx->line_tex_loc, 
+    LOG_ERR("Line program id=%d, pos=%d, texcoord=%d, color=%d, canvas=%d",
+									program,
+									pctx->line_pos_loc,
+									pctx->line_tex_loc,
 									pctx->line_color_loc,
 									pctx->line_canvas_loc);
     #endif
@@ -793,7 +793,7 @@ static void gpu_render_draw_line(void *display, const GLfloat* points, const siz
 
 		const Vec2 p1 = p1_screen; // .mul(1.f / 50.f).sub(Vec2(1.f, 1.f));
 		const Vec2 p2 = p2_screen; // .mul(1.f / 50.f).sub(Vec2(1.f, 1.f));
-		
+
 		const Vec2 tangent = p2.sub(p1).normalize();
 		Vec2 normal_offset = tangent.perpendicular().mul(normal_length);
 		normal_offset.x *= 0.8571f;	// TODO: this is the aspect ratio of the output canvas
@@ -804,7 +804,7 @@ static void gpu_render_draw_line(void *display, const GLfloat* points, const siz
         uv_coord.push_back(Vec2(0.f, i == 0 ? 0.0f : 1.0f));
 		uv_coord.push_back(Vec2(normal_length, i == 0 ? 0.0f : 1.0f));
 
-		// special case: last segment 
+		// special case: last segment
 		if((point_count - 2) == i) {
 			const Vec2 n3 = p2.add(normal_offset);
 			const Vec2 n4 = p2.sub(normal_offset);
@@ -830,7 +830,7 @@ static void gpu_render_draw_line(void *display, const GLfloat* points, const siz
 						GL_FALSE,     // not normalized
 						0,            // stride = 0, tightly packed
 						&extruded[0] );  // pointer to attribute array
-	
+
 	/*
 	glVertexAttribPointer(pctx->line_tex_loc,            // Array "ID"
 						2,            // 2 element (u, v)
@@ -855,7 +855,7 @@ static void gpu_render_draw_line(void *display, const GLfloat* points, const siz
 unsigned int get_type() {
 	struct timespec ts;\
 	clock_gettime(CLOCK_REALTIME, &ts);\
-	
+
 	return (unsigned int)(ts.tv_sec % 8) + 1;
 }
 
@@ -950,7 +950,7 @@ void  gpu_render_2d_overlay(void *display, int w, int h,
 		static const unsigned int FRONT_SIDE_VIEW = 6;
 		static const unsigned int REAR_SIDE_VIEW = 7;
 		static const unsigned int REAR_ASSISTANT_VIEW = 8;
-		
+
 		if(drawline) {
 			//LOG_ERR("draw x=%d, y=%d, w=%d, h=%d", rect.x, rect.y, rect.w, rect.h);
 			glUseProgram(pctx->line_program);
@@ -1088,12 +1088,12 @@ void  gpu_render_2d_overlay(void *display, int w, int h,
 						50.f, 32.5f,
 						67.f, 33.f,
 					};
-					
+
 					gpu_render_draw_line(display, gold_left, _countof(gold_left), 0.65f, Color4::gold());
 					gpu_render_draw_line(display, gold_right, _countof(gold_right), 0.65f, Color4::gold());
 					gpu_render_draw_line(display, gold_top, _countof(gold_top), 0.65f, Color4::gold());
 					gpu_render_draw_line(display, gold_middle, _countof(gold_middle), 0.65f, Color4::gold());
-					
+
 					gpu_render_draw_line(display, red_left, _countof(red_left), 0.65f, Color4::red());
 					gpu_render_draw_line(display, red_right, _countof(red_right), 0.65f, Color4::red());
 					gpu_render_draw_line(display, red_top, _countof(red_top), 0.65f, Color4::red());
@@ -1170,7 +1170,7 @@ void  gpu_render_2d_overlay(void *display, int w, int h,
 					gpu_render_draw_line(display, left_1, _countof(left_1), 0.65f, Color4::blue());
 					gpu_render_draw_line(display, left_2, _countof(left_2), 0.65f, Color4::blue());
 					gpu_render_draw_line(display, left_3, _countof(left_3), 0.65f, Color4::blue());
-					
+
 					gpu_render_draw_line(display, right_1, _countof(right_1), 0.65f, Color4::blue());
 					gpu_render_draw_line(display, right_2, _countof(right_2), 0.65f, Color4::blue());
 					gpu_render_draw_line(display, right_3, _countof(right_3), 0.65f, Color4::blue());
@@ -1178,7 +1178,7 @@ void  gpu_render_2d_overlay(void *display, int w, int h,
 					gpu_render_draw_line(display, dynamic_trajectory, _countof(dynamic_trajectory), 1.2f, Color4::gold());
 				}
 				break;
-			case FRONT_SIDE_VIEW: // Front Side View 
+			case FRONT_SIDE_VIEW: // Front Side View
 			case REAR_SIDE_VIEW: // Rear Side View
 				break;
 			case REAR_ASSISTANT_VIEW: // Rear assistant View

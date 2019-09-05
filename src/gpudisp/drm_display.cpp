@@ -26,9 +26,10 @@
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 #include <drm_fourcc.h>
-#include "drm_display.h"
-#include "osal.h"
+#include "gpudisp/drm_display.h"
+#include "gpudisp/osal.h"
 
+int dynamic_log_level = 6;
 static const char * const mtk_crtc_prop_names[] = {
     [WDRM_CRTC_MODE_ID] = "MODE_ID",
     [WDRM_CRTC_ACTIVE] = "ACTIVE",
@@ -544,15 +545,15 @@ int drm_add_mode_set(struct mtk_display * disp, int screen_idx, int enable)
 		return -1;
 	}
 
-	drmModeAtomicAddProperty(disp->req, screen->con_id,
+	drmModeAtomicAddProperty(static_cast<drmModeAtomicReqPtr>(disp->req), screen->con_id,
 		screen->con_prop_id[WDRM_CONNECTOR_CRTC_ID],
 		enable ? screen->crtc_id : 0);
 
-	drmModeAtomicAddProperty(disp->req, screen->crtc_id,
+	drmModeAtomicAddProperty(static_cast<drmModeAtomicReqPtr>(disp->req), screen->crtc_id,
 		screen->crtc_prop_id[WDRM_CRTC_MODE_ID],
 		enable ? screen->blob_id : 0);
 
-	drmModeAtomicAddProperty(disp->req, screen->crtc_id,
+	drmModeAtomicAddProperty(static_cast<drmModeAtomicReqPtr>(disp->req), screen->crtc_id,
 		screen->crtc_prop_id[WDRM_CRTC_ACTIVE], enable);
 
 	disp->flags |= DRM_MODE_ATOMIC_ALLOW_MODESET;
@@ -574,45 +575,45 @@ int drm_add_plane_set(struct mtk_display * disp,
 	if (!disp->req) {
 		return -1;
 	}
-	
+
 	LOG_DBG("set fb_id %d to plane %d crtc %d",
 		raw_data != NULL ? raw_data->fb_id : 0, plane_info->plane_id, screen->crtc_id);
 
-	drmModeAtomicAddProperty(disp->req, plane_info->plane_id,
+	drmModeAtomicAddProperty(static_cast<drmModeAtomicReqPtr>(disp->req), plane_info->plane_id,
 		plane_info->prop_id[WDRM_PLANE_FB_ID],
 		raw_data != NULL ? raw_data->fb_id : 0);
 
-	drmModeAtomicAddProperty(disp->req, plane_info->plane_id,
+	drmModeAtomicAddProperty(static_cast<drmModeAtomicReqPtr>(disp->req), plane_info->plane_id,
 		plane_info->prop_id[WDRM_PLANE_CRTC_ID],
 		raw_data != NULL ? screen->crtc_id : 0);
 
-	drmModeAtomicAddProperty(disp->req, plane_info->plane_id,
+	drmModeAtomicAddProperty(static_cast<drmModeAtomicReqPtr>(disp->req), plane_info->plane_id,
 		plane_info->prop_id[WDRM_PLANE_SRC_X], 0);
 
-	drmModeAtomicAddProperty(disp->req, plane_info->plane_id,
+	drmModeAtomicAddProperty(static_cast<drmModeAtomicReqPtr>(disp->req), plane_info->plane_id,
 		plane_info->prop_id[WDRM_PLANE_SRC_Y], 0);
 
-	drmModeAtomicAddProperty(disp->req, plane_info->plane_id,
+	drmModeAtomicAddProperty(static_cast<drmModeAtomicReqPtr>(disp->req), plane_info->plane_id,
 		plane_info->prop_id[WDRM_PLANE_SRC_W],
 		raw_data != NULL ? (raw_data->width << 16) : 0);
 
-	drmModeAtomicAddProperty(disp->req, plane_info->plane_id,
+	drmModeAtomicAddProperty(static_cast<drmModeAtomicReqPtr>(disp->req), plane_info->plane_id,
 		plane_info->prop_id[WDRM_PLANE_SRC_H],
 		raw_data != NULL ? (raw_data->height << 16) : 0);
 
-	drmModeAtomicAddProperty(disp->req, plane_info->plane_id,
+	drmModeAtomicAddProperty(static_cast<drmModeAtomicReqPtr>(disp->req), plane_info->plane_id,
 		plane_info->prop_id[WDRM_PLANE_CRTC_X],
 		raw_data != NULL ? x : 0);
 
-	drmModeAtomicAddProperty(disp->req, plane_info->plane_id,
+	drmModeAtomicAddProperty(static_cast<drmModeAtomicReqPtr>(disp->req), plane_info->plane_id,
 		plane_info->prop_id[WDRM_PLANE_CRTC_Y],
 		raw_data != NULL ? y : 0);
 
-	drmModeAtomicAddProperty(disp->req, plane_info->plane_id,
+	drmModeAtomicAddProperty(static_cast<drmModeAtomicReqPtr>(disp->req), plane_info->plane_id,
 		plane_info->prop_id[WDRM_PLANE_CRTC_W],
 		raw_data != NULL ? raw_data->width : 0);
 
-	drmModeAtomicAddProperty(disp->req, plane_info->plane_id,
+	drmModeAtomicAddProperty(static_cast<drmModeAtomicReqPtr>(disp->req), plane_info->plane_id,
 		plane_info->prop_id[WDRM_PLANE_CRTC_H],
 		raw_data != NULL ? raw_data->height : 0);
 
@@ -631,13 +632,13 @@ int drm_display_flush(struct mtk_display * disp, int block)
 
 	LOG_DBG("commit req %p flags %x start ", disp->req, disp->flags);
 
-	ret = drmModeAtomicCommit(disp->fd, disp->req, disp->flags, disp);
+	ret = drmModeAtomicCommit(disp->fd, static_cast<drmModeAtomicReqPtr>(disp->req), disp->flags, disp);
 	if (ret < 0)
 		LOG_ERR( "atomic commit failed %s", strerror(errno));
 
 	LOG_DBG("commit req %p flags %x  done ", disp->req, disp->flags);
 
-	drmModeAtomicFree(disp->req);
+	drmModeAtomicFree(static_cast<drmModeAtomicReqPtr>(disp->req));
 	disp->req = NULL;
 	disp->flags = 0;
 

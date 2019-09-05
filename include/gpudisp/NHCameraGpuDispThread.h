@@ -49,8 +49,7 @@ class NHCameraGpuDispThread : public NCThread {
     /**
      * @brief Thread start function.
      */
-    virtual VOID
-    run();
+    virtual VOID run();
 
  private:
     // NHCameraRxServer* m_recvServer;
@@ -65,24 +64,8 @@ class NHCameraGpuDispThread : public NCThread {
      * @attention Asynchronous I/F.
      */
     NC_BOOL
-    ReceiveData();
+    DisplayGuideLine();
 
-    /**
-     * @brief Read data from device.
-     *
-     * @param [in] data
-     *             data buffer.
-     * @param [in] dataNum
-     *             receive data length.
-     * @param [out] retNum
-     *             Actual received data length.
-     *
-     * @return NC_TRUE indicates success, other value indicates failure.
-     *
-     * @attention Asynchronous I/F.
-     */
-    NC_BOOL
-    read(BYTE* data, UINT32 dataNum, INT* retNum);
 
     /**
      * copy constructor(forbidden)

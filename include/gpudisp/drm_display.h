@@ -66,21 +66,21 @@ enum wdrm_plane_property {
 
 struct raw_texture {
     /* input */
-    int width;
-    int height;
-    int fourcc;
-    int bpp;
-    int plane_nums;
+    uint32_t width;
+    uint32_t height;
+    uint32_t fourcc;
+    uint32_t bpp;
+    uint32_t plane_nums;
 
-    int pitch[MTK_MAX_PLANE];
-    int offset[MTK_MAX_PLANE];
-    int fds[MTK_MAX_PLANE];
-    int handle[MTK_MAX_PLANE];
+    uint32_t pitch[MTK_MAX_PLANE];
+    uint32_t offset[MTK_MAX_PLANE];
+    uint32_t fds[MTK_MAX_PLANE];
+    uint32_t handle[MTK_MAX_PLANE];
 
     void *texbuf;
-    int size;
+    uint32_t size;
 
-    int fb_id;
+    uint32_t fb_id;
     void *tex_id;
 
     void *android_buf;

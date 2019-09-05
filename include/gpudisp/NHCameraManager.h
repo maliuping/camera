@@ -21,6 +21,7 @@
 #include "ncore/NCTypesDefine.h"
 #include "ncore/NCSyncObj.h"
 
+
 namespace nutshell {
 
 /**
@@ -28,6 +29,7 @@ namespace nutshell {
 */
 class NCSyncObj;
 class NCWaitObj;
+class NHCameraGpuDispThread;
 
 class NHCameraManager {
 
@@ -41,13 +43,31 @@ class NHCameraManager {
         @return camerad packer instance
     */
     /*************************************************************************/
-    static NHCameraManager*
-    Instance(void);
+    static NHCameraManager* Instance();
 
 
-    private:
-    static NHRtapManager    *m_URtapManagerInstance;  // !< unique instance in process
-    static NCSyncObj    s_cSync;        // !< sync object
+    /*************************************************************************/
+    /**
+        Destroy
+
+        @param  none
+
+        @return none
+    */
+    /*************************************************************************/
+    static void destroy();
+
+
+    /*************************************************************************/
+    /**
+        onAwake
+
+        @param  none
+
+        @retval none
+    */
+    /*************************************************************************/
+    void onAwake();
 
 
      private:
@@ -80,11 +100,19 @@ class NHCameraManager {
      *
      * forbidden
      *
-     * @param const NHRtapManager& src [IN]
+     * @param const NHCameraManager& src [IN]
      *
      * @return none
      */
     NHCameraManager(const NHCameraManager& src);
+
+    const NHCameraManager& operator=(const NHCameraManager& src);
+
+
+    private:
+    static NHCameraManager    *m_UCameraManagerInstance;  // !< unique instance in process
+    static NCSyncObj    s_cSync;        // !< sync object
+    NHCameraGpuDispThread* m_uCameraGpuDisp;
 
 };
 

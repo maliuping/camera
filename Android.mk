@@ -6,12 +6,18 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libgpudisp
 
 LOCAL_C_INCLUDES := ivi/system/hardware/handler/camera/include \
-                    ivi/system/core/include
+                    ivi/system/core/include \
+                    external/libpng \
+                    external/libdrm \
+                    external/libdrm/include/drm \
+                    external/libxml2/include \
+                    system/core/base/include \
 
 
 src_files := src/gpudisp/drm_display.cpp \
-             src/gpudisp/gpu_render.cpp
-
+             src/gpudisp/gpu_render.cpp \
+             src/gpudisp/NHCameraGpuDispThread.cpp \
+             src/gpudisp/NHCameraManager.cpp \
 
 LOCAL_SRC_FILES :=  $(src_files)
 
@@ -86,9 +92,9 @@ LOCAL_CLIKER := --coverage
 LOCAL_STATIC_LIBRARIES += libgcov libprofile_rt
 
 LOCAL_SHARED_LIBRARIES := libutils liblog libservicebase \
+                          iauto.hardware.camerad.rvc@1.0 \
                           libcameradrvc \
-                          iauto.hardware.camerad.rvc@1.0
-
+                          libgpudisp
 
 
 LOCAL_MODULE_TAGS := optional

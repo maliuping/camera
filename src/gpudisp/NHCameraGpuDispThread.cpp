@@ -11,8 +11,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  */
 /**
- * @file NHCameraReceiveThread.cpp
- * @brief Implementation file of class NHCameraReceiveThread.
+ * @file NHCameraGpuDispThread.cpp
+ * @brief Implementation file of class NHCameraGpuDispThread.
  */
 
 #include <stdlib.h>
@@ -21,7 +21,7 @@
 #include "ncore/NCLog.h"
 #include "log/log.h"
 #include "cutils/log.h"
-
+#include "gpudisp/NHCameraGpuDispThread.h"
 
 #undef LOG_TAG
 #define LOG_TAG "SYS_HWH_CAMERA_NHCAMERA"
@@ -30,21 +30,21 @@ namespace nutshell {
 /**
  * @brief Constructor.
  */
-NHCameraReceiveThread::NHCameraReceiveThread()
+NHCameraGpuDispThread::NHCameraGpuDispThread()
     : NCThread() {
 }
 
 /**
  * @brief Destructor.
  */
-NHCameraReceiveThread::~NHCameraReceiveThread() {
+NHCameraGpuDispThread::~NHCameraGpuDispThread() {
 }
 
 /**
  * @brief Thread start function.
  */
 VOID
-NHCameraReceiveThread::run() {
+NHCameraGpuDispThread::run() {
 
     // display guideline
     while (NC_TRUE) {
@@ -63,25 +63,12 @@ NHCameraReceiveThread::run() {
  * @brief display.
  */
 NC_BOOL
-NHCameraReceiveThread::DisplayGuideLine() {
+NHCameraGpuDispThread::DisplayGuideLine() {
+    SLOGI("NHCameraGpuDispThread: DisplayGuideLine !");
 
+    return NC_TRUE;
 }
 
-/**
- * @brief Read data
- */
-NC_BOOL
-NHCameraReceiveThread::read(BYTE* data, UINT32 dataNum, INT* retNum) {
-    NC_BOOL ret = NC_FALSE;
-    if ((NULL == data) || (NULL == retNum) || (NULL == m_uCameraDevice)) {
-        ALOGE("NHCameraReceiveThread::read invalid parameter!");
-        return ret;
-    } else {
-        // poll, block read
-        ret = m_uCameraDevice->read(data, dataNum, retNum);
-        return ret;
-    }
-}
 
 }  // namespace nutshell
 /* EOF */
