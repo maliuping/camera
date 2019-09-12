@@ -21,9 +21,17 @@
 #ifndef __cplusplus
 #   error ERROR: This file requires C++ compilation(use a .cpp suffix)
 #endif
+#include <stdlib.h>
+#include <stdio.h>
+#include <drm_fourcc.h>
+#include <xf86drm.h>
+#include <xf86drmMode.h>
 
 #include "ncore/NCTypesDefine.h"
 #include "ncore/NCThread.h"
+#include "gpudisp/gpu_render.h"
+#include "gpudisp/drm_display.h"
+#include "gpudisp/osal.h"
 
 namespace nutshell {
 // class NHCameraDevice;
@@ -51,9 +59,6 @@ class NHCameraGpuDispThread : public NCThread {
      */
     virtual VOID run();
 
- private:
-    // NHCameraRxServer* m_recvServer;
-    // NHCameraDevice* m_uCameraDevice;         // /< uCom device pointer
 
  private:
     /**
@@ -65,6 +70,15 @@ class NHCameraGpuDispThread : public NCThread {
      */
     NC_BOOL
     DisplayGuideLine();
+
+    /**
+     * @brief display_set_drm_mode
+     *
+     * @return
+     *
+     * @attention
+     */
+    void display_set_drm_mode(struct mtk_display *display, int screen_idx, int enable);
 
 
     /**
@@ -84,6 +98,18 @@ class NHCameraGpuDispThread : public NCThread {
      * @return const NHCameraGpuDispThread&
      */
     const NHCameraGpuDispThread& operator=(const NHCameraGpuDispThread& src);
+
+
+    private:
+    int fourcc;
+    struct mtk_display disp;
+    void * gpu_handle;
+    struct raw_texture input_tex;
+    void * input_gpu_tex;
+    struct raw_texture output_tex[2];
+    void * output_gpu_tex[2];
+    REND_COORD_T coord;
+	REND_COORD_T *pcoord[2];
 };
 }  // namespace nutshell
 #endif  // INCLUDE_NHCAMERA_NHCameraGpuDispThread_H_

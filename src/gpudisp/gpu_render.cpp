@@ -30,6 +30,8 @@
 
 #define EGL_EGLEXT_PROTOTYPES
 #define GL_GLEXT_PROTOTYPES
+#define STB_IMAGE_IMPLEMENTATION
+#include "gpudisp/stb_image.h"
 
 typedef struct MTK_GPU_REND{
 	void *gbm_dev;
@@ -63,6 +65,229 @@ static PFNEGLCREATEIMAGEKHRPROC pfeglCreateImageKHR;
 static PFNEGLDESTROYIMAGEKHRPROC pfeglDestroyImageKHR;
 static PFNGLEGLIMAGETARGETTEXTURE2DOESPROC pfglEGLImageTargetTexture2DOES;
 static PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC pfglEGLImageTargetRenderbufferStorageOES;
+
+typedef struct
+{
+	// Handle to a program object
+   GLuint programObject;
+
+   // Attribute locations
+   GLint  positionLoc;
+   GLint  texCoordLoc;
+
+   // Sampler location
+   GLint samplerLoc;
+
+   // Texture handle
+   GLuint textureId;
+} UserData;
+
+///
+//  From an RGB8 source image, generate the next level mipmap
+//
+static GLboolean GenMipMap2D( GLubyte *src, GLubyte **dst, int srcWidth, int srcHeight, int *dstWidth, int *dstHeight )
+{
+   int x,
+       y;
+   int texelSize = 3;
+
+   *dstWidth = srcWidth / 2;
+   if ( *dstWidth <= 0 )
+      *dstWidth = 1;
+
+   *dstHeight = srcHeight / 2;
+   if ( *dstHeight <= 0 )
+      *dstHeight = 1;
+
+   *dst = (GLubyte *)malloc ( sizeof(GLubyte) * texelSize * (*dstWidth) * (*dstHeight) );
+   if ( *dst == NULL )
+      return GL_FALSE;
+
+   for ( y = 0; y < *dstHeight; y++ )
+   {
+      for( x = 0; x < *dstWidth; x++ )
+      {
+         int srcIndex[4];
+         float r = 0.0f,
+               g = 0.0f,
+               b = 0.0f;
+         int sample;
+
+         // Compute the offsets for 2x2 grid of pixels in previous
+         // image to perform box filter
+         srcIndex[0] =
+            (((y * 2) * srcWidth) + (x * 2)) * texelSize;
+         srcIndex[1] =
+            (((y * 2) * srcWidth) + (x * 2 + 1)) * texelSize;
+         srcIndex[2] =
+            ((((y * 2) + 1) * srcWidth) + (x * 2)) * texelSize;
+         srcIndex[3] =
+            ((((y * 2) + 1) * srcWidth) + (x * 2 + 1)) * texelSize;
+
+         // Sum all pixels
+         for ( sample = 0; sample < 4; sample++ )
+         {
+            r += src[srcIndex[sample]];
+            g += src[srcIndex[sample] + 1];
+            b += src[srcIndex[sample] + 2];
+         }
+
+         // Average results
+         r /= 4.0;
+         g /= 4.0;
+         b /= 4.0;
+
+         // Store resulting pixels
+         (*dst)[ ( y * (*dstWidth) + x ) * texelSize ] = (GLubyte)( r );
+         (*dst)[ ( y * (*dstWidth) + x ) * texelSize + 1] = (GLubyte)( g );
+         (*dst)[ ( y * (*dstWidth) + x ) * texelSize + 2] = (GLubyte)( b );
+      }
+   }
+
+   return GL_TRUE;
+}
+
+///
+//  Generate an RGB8 checkerboard image
+//
+static GLubyte* GenCheckImage( int width, int height, int checkSize )
+{
+   int x,
+       y;
+	GLubyte *pixels = NULL;
+   pixels = (GLubyte *)malloc( width * height * 3 );
+
+   if ( pixels == NULL )
+      return NULL;
+
+   for ( y = 0; y < height; y++ )
+      for ( x = 0; x < width; x++ )
+      {
+         GLubyte rColor = 0;
+         GLubyte bColor = 0;
+
+         if ( ( x / checkSize ) % 2 == 0 )
+         {
+            rColor = 255 * ( ( y / checkSize ) % 2 );
+            bColor = 255 * ( 1 - ( ( y / checkSize ) % 2 ) );
+         }
+         else
+         {
+            bColor = 255 * ( ( y / checkSize ) % 2 );
+            rColor = 255 * ( 1 - ( ( y / checkSize ) % 2 ) );
+         }
+
+         pixels[(y * height + x) * 3] = rColor;
+         pixels[(y * height + x) * 3 + 1] = 0;
+         pixels[(y * height + x) * 3 + 2] = bColor;
+      }
+
+   return pixels;
+}
+
+///
+// Create a mipmapped 2D texture image
+//
+static GLuint CreateMipMappedTexture2D( )
+{
+   // Texture object handle
+   GLuint textureId;
+   int    width = 256,
+          height = 256;
+   int    level;
+   GLubyte *pixels;
+   GLubyte *prevImage;
+   GLubyte *newImage;
+
+   pixels = GenCheckImage( width, height, 8 );
+   if ( pixels == NULL )
+      return 0;
+
+   // Generate a texture object
+   glGenTextures ( 1, &textureId );
+
+   // Bind the texture object
+   glBindTexture ( GL_TEXTURE_2D, textureId );
+
+   // Load mipmap level 0
+   glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB, width, height,
+                  0, GL_RGB, GL_UNSIGNED_BYTE, pixels );
+
+   level = 1;
+   prevImage = &pixels[0];
+
+   while ( width > 1 && height > 1 )
+   {
+      int newWidth,
+          newHeight;
+
+      // Generate the next mipmap level
+      GenMipMap2D( prevImage, &newImage, width, height,
+                   &newWidth, &newHeight );
+
+      // Load the mipmap level
+      glTexImage2D( GL_TEXTURE_2D, level, GL_RGB,
+                    newWidth, newHeight, 0, GL_RGB,
+                    GL_UNSIGNED_BYTE, newImage );
+
+      // Free the previous image
+      free ( prevImage );
+
+      // Set the previous image for the next iteration
+      prevImage = newImage;
+      level++;
+
+      // Half the width and height
+      width = newWidth;
+      height = newHeight;
+   }
+
+   free ( newImage );
+
+   // Set the filtering mode
+   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST );
+   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+
+   return textureId;
+
+}
+
+///
+// Create a simple 2x2 texture image with four different colors
+//
+GLuint CreateSimpleTexture2D( )
+{
+   // Texture object handle
+   GLuint textureId;
+
+   // 2x2 Image, 3 bytes per pixel (R, G, B)
+   GLubyte pixels[4 * 3] =
+   {
+      255,   0,   0, // Red
+        0, 255,   0, // Green
+        0,   0, 255, // Blue
+      255, 255,   0  // Yellow
+   };
+
+   // Use tightly packed data
+   glPixelStorei ( GL_UNPACK_ALIGNMENT, 1 );
+
+   // Generate a texture object
+   glGenTextures ( 1, &textureId );
+
+   // Bind the texture object
+   glBindTexture ( GL_TEXTURE_2D, textureId );
+
+   // Load the texture
+   glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels );
+
+   // Set the filtering mode
+   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+   glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+
+   return textureId;
+
+}
 
 static int
 format_check_yuv(uint32_t format)
@@ -267,10 +492,10 @@ static GLuint _load_shader(GLenum shaderType, const char *pSource)
     GLint compiled = 0;
     GLint infoLen = 0;
     char* buf;
-    GLuint shader = glCreateShader(shaderType);
+    GLuint shader = glCreateShader(shaderType);// 创建着色器对象
 
     if (shader) {
-        glShaderSource(shader, 1, &pSource, NULL);
+        glShaderSource(shader, 1, &pSource, NULL);// 把着色器源码加到着色器对象上
         glCompileShader(shader);
 
         glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
@@ -306,14 +531,14 @@ static GLuint _create_program(const char *pVertexSource, const char *pFragmentSo
         if (!pixelShader)
         return 0;
 
-    program = glCreateProgram();
+    program = glCreateProgram();//创建一个程序，并返回新创建程序对象的ID引用。
     if (program) {
         GLint linkStatus = GL_FALSE;
-        glAttachShader(program, vertexShader);
+        glAttachShader(program, vertexShader);//把着色器附加到程序上
         check_gl_error("glAttachShader");
         glAttachShader(program, pixelShader);
         check_gl_error("glAttachShader");
-        glLinkProgram(program);
+        glLinkProgram(program);//将着色器链接
 
         glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
         if (linkStatus != GL_TRUE) {
@@ -417,13 +642,14 @@ static int _init_gl(MTK_GPU_REND_T *pctx)
 	GLuint program;
 
 	/* load texture program */
+	#if 1
 	program = _create_program(vertexShader, fragmentShader);
 	if (!program) {
 		LOG_ERR("create program fail\n");
 		return -1;
 	}
 
-	glValidateProgram(program);
+	glValidateProgram(program);//检查程序中包含的可执行文件是否可以在当前的OpenGL状态执行
 
 	glGetProgramiv(program, GL_VALIDATE_STATUS, &nShaderStatus);
 
@@ -439,6 +665,7 @@ static int _init_gl(MTK_GPU_REND_T *pctx)
 	pctx->tex_coords = glGetAttribLocation(program, "texCoords");
 
     LOG_ERR("TexProg id=%d, pos=%d, texcoord=%d", program, pctx->tex_pos, pctx->tex_coords);
+	#endif
 
 	/* load guideline program */
     #if 1
@@ -503,10 +730,10 @@ static void setup_texture(REND_COORD_T *pcoord, int w, int h,
 		coords[0] = coords[4] = coords[5] = coords[7] = 0.0f;
 		coords[1] = coords[2] = coords[3] = coords[6] = 1.0f;
 	} else {
-		coords[0] = coords[4] = (GLfloat)pcoord->src_x/(GLfloat)pcoord->tex_w;
-		coords[5] = coords[7] = (GLfloat)pcoord->src_y/(GLfloat)pcoord->tex_h;
-		coords[2] = coords[6] = (GLfloat)(pcoord->src_x + pcoord->src_w)/(GLfloat)pcoord->tex_w;
-		coords[1] = coords[3] = (GLfloat)(pcoord->src_y + pcoord->src_h)/(GLfloat)pcoord->tex_h;
+		coords[0] = coords[4] = (GLfloat)pcoord->src_x/(GLfloat)pcoord->tex_w;// 0
+		coords[5] = coords[7] = (GLfloat)pcoord->src_y/(GLfloat)pcoord->tex_h;// 0
+		coords[2] = coords[6] = (GLfloat)(pcoord->src_x + pcoord->src_w)/(GLfloat)pcoord->tex_w;// 1
+		coords[1] = coords[3] = (GLfloat)(pcoord->src_y + pcoord->src_h)/(GLfloat)pcoord->tex_h;// 1
 	}
 }
 
@@ -652,19 +879,19 @@ void * gpu_render_get_tex(void *display, void *buf, int flag)
 		return NULL;
 	}
 	if(flag == 0){
-		glGenTextures(1, &tex_info->texid);
+		glGenTextures(1, &tex_info->texid);//用于生成纹理对象
 	}
 
 	if(flag == 1){
-		glGenFramebuffers(1, &tex_info->glfb);
-		glGenRenderbuffers(1, &tex_info->glrb);
+		glGenFramebuffers(1, &tex_info->glfb);//创建一个帧染缓冲区对象
+		glGenRenderbuffers(1, &tex_info->glrb);//创建一个渲染缓冲区对象，
 
-		glBindRenderbuffer(GL_RENDERBUFFER, tex_info->glrb);
-		glBindFramebuffer(GL_FRAMEBUFFER, tex_info->glfb);
+		glBindRenderbuffer(GL_RENDERBUFFER, tex_info->glrb);//将该渲染缓冲区对象绑定到管线
+		glBindFramebuffer(GL_FRAMEBUFFER, tex_info->glfb);//将该帧染缓冲区对象绑定到管线上
 
 		pfglEGLImageTargetRenderbufferStorageOES(GL_RENDERBUFFER, (EGLImageKHR)eglimg);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-			GL_RENDERBUFFER, tex_info->glrb);
+			GL_RENDERBUFFER, tex_info->glrb);//将创建的渲染缓冲区绑定到帧缓冲区上，并使用颜色填充
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 			LOG_ERR("failed to create framebuffer: %s\n", get_gl_error());
@@ -868,7 +1095,7 @@ void  gpu_render_2d_overlay(void *display, int w, int h,
 	struct gpu_tex_info *in_tex_info = NULL;
 	struct gpu_tex_info *out_tex_info = (struct gpu_tex_info *)out_tex;
 	int i;
-
+	unsigned int texture;
 	if (0 == in_num) {
 		LOG_WARN("Need set input buffer!");
 		return;
@@ -877,19 +1104,118 @@ void  gpu_render_2d_overlay(void *display, int w, int h,
 	glBindRenderbuffer(GL_RENDERBUFFER, out_tex_info->glrb);
 	glBindFramebuffer(GL_FRAMEBUFFER, out_tex_info->glfb);
 
-	glViewport(0, 0,(GLint)w, (GLint)h);
+	// glViewport(0, 0,(GLint)w, (GLint)h);
 
-	glClearColor(0.0, 0.0, 0.0, 1.0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	// glClearColor(0.0, 0.0, 0.0, 0.0);
+	// glClear(GL_COLOR_BUFFER_BIT);
 
-	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_BLEND);
+	// glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	// glEnable(GL_BLEND);
 
-    glUseProgram(pctx->tex_program);
-    //check_gl_error("glUseProgram - Texprog");
+    // glUseProgram(pctx->tex_program);
+    // //check_gl_error("glUseProgram - Texprog");
 
-	glActiveTexture(GL_TEXTURE0);
+	// glActiveTexture(GL_TEXTURE0);
+/***************************************************************/
+	// glGenTextures(1, &texture);
+	// glBindTexture(GL_TEXTURE_2D, texture);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// int width, height, nrChannels;
+	// unsigned char *data = stbi_load("container.jpg", &width, &height, &nrChannels, 0);
+	// if (data)
+	// {
+	// 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+	// 	glGenerateMipmap(GL_TEXTURE_2D);
+	// }
+	// else
+	// {
+	// 	LOG_WARN("Failed to load texture");
+	// }
+	// stbi_image_free(data);
+	UserData userData;
+	const char vShaderStr[] =
+      "attribute vec4 a_position;   \n"
+      "attribute vec2 a_texCoord;   \n"
+      "varying vec2 v_texCoord;     \n"
+      "void main()                  \n"
+      "{                            \n"
+      "   gl_Position = a_position; \n"
+      "   v_texCoord = a_texCoord;  \n"
+      "}                            \n";
 
+   const char fShaderStr[] =
+      "precision mediump float;                            \n"
+      "varying vec2 v_texCoord;                            \n"
+      "uniform sampler2D s_texture;                        \n"
+      "void main()                                         \n"
+      "{                                                   \n"
+      "  gl_FragColor = texture2D( s_texture, v_texCoord );\n"
+      "}                                                   \n";
+
+   // Load the shaders and get a linked program object
+   userData.programObject = _create_program(vShaderStr, fShaderStr);
+
+   // Get the attribute locations
+   userData.positionLoc = glGetAttribLocation ( userData.programObject, "a_position" );
+   userData.texCoordLoc = glGetAttribLocation ( userData.programObject, "a_texCoord" );
+
+   // Get the sampler location
+   userData.samplerLoc = glGetUniformLocation ( userData.programObject, "s_texture" );
+
+   // Load the texture
+   userData.textureId = CreateSimpleTexture2D ();
+
+   glClearColor ( 0.0f, 0.0f, 0.0f, 0.0f );
+
+    GLfloat vVertices[] = { -1.0f,  1.0f, 0.0f,  // Position 0
+                            0.0f,  0.0f,        // TexCoord 0
+                           -1.0f, -1.0f, 0.0f,  // Position 1
+                            0.0f,  1.0f,        // TexCoord 1
+                            1.0f, -1.0f, 0.0f,  // Position 2
+                            1.0f,  1.0f,        // TexCoord 2
+                            1.0f,  1.0f, 0.0f,  // Position 3
+                            1.0f,  0.0f         // TexCoord 3
+                         };
+   GLushort indices[] = { 0, 1, 2, 0, 2, 3 };
+
+   // Set the viewport
+   glViewport ( 0, 0, w, h );
+
+   // Clear the color buffer
+   glClear ( GL_COLOR_BUFFER_BIT );
+
+   // Use the program object
+   glUseProgram ( userData.programObject );
+
+   // Load the vertex position
+   glVertexAttribPointer ( userData.positionLoc, 3, GL_FLOAT,
+                           GL_FALSE, 5 * sizeof(GLfloat), vVertices );
+   // Load the texture coordinate
+   glVertexAttribPointer ( userData.texCoordLoc, 2, GL_FLOAT,
+                           GL_FALSE, 5 * sizeof(GLfloat), &vVertices[3] );
+
+   glEnableVertexAttribArray ( userData.positionLoc );
+   glEnableVertexAttribArray ( userData.texCoordLoc );
+
+   // Bind the texture
+   glActiveTexture ( GL_TEXTURE0 );
+   glBindTexture ( GL_TEXTURE_2D, userData.textureId );
+
+   // Set the sampler texture unit to 0
+   glUniform1i ( userData.samplerLoc, 0 );
+
+    int width, height, nrChannels;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char *data = stbi_load("/data/test.png", &width,&height, &nrChannels, 0);
+
+    glTexImage2D(GL_TEXTURE_2D,0, GL_RGBA, width,height,0,GL_RGBA,GL_UNSIGNED_BYTE, data);
+    glDrawElements ( GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices );
+
+
+#if 0
 	for (i = 0; i < in_num; i++) {
 		in_tex_info = (struct gpu_tex_info *)in_tex[i];
 
@@ -902,7 +1228,7 @@ void  gpu_render_2d_overlay(void *display, int w, int h,
 
 		setup_texture(coord[i], w, h, verts, coords);
 
-		LOG_VERBOSE(1000, "image verts: \n");
+		LOG_VERBOSE(1000, "image verts: \n");//标准化设备坐标
 		LOG_VERBOSE(1000, "%f %f %f \n", verts[0], verts[1], verts[2]);
 		LOG_VERBOSE(1000, "%f %f %f \n", verts[3], verts[4], verts[5]);
 		LOG_VERBOSE(1000, "%f %f %f \n", verts[6], verts[7], verts[8]);
@@ -925,16 +1251,17 @@ void  gpu_render_2d_overlay(void *display, int w, int h,
 		glEnableVertexAttribArray(pctx->tex_coords);
 		check_gl_error("glEnableVertexAttribArray");
 
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);// 2个三角形
 		check_gl_error("glDrawArrays");
 
 		glDisableVertexAttribArray(pctx->tex_pos);
 		glDisableVertexAttribArray(pctx->tex_coords);
 	}
-
+#endif
 	//
 	// draw line
 	//
+	#if 0
 	for (i = 0; i < in_num; i++) {
 		const REND_COORD_T& rect = *coord[i];
 
@@ -979,6 +1306,16 @@ void  gpu_render_2d_overlay(void *display, int w, int h,
 					const GLfloat wheel_FL[] = {
 						36.8f,  34.1f,
 						36.8f,  63.7f,
+						/* 289.511627f, 296.909729f, 304.374969f, 311.870148f,
+        319.360626f, 326.814392f, 334.202759f, 341.500458f, 348.685608f, 355.739746f,
+        362.647705f, 369.397339f, 375.97934f, 382.386841f, 388.615295f, 394.662048f,
+        400.526123f, 406.207916f, 411.709015f, 417.031952f, 422.180054f, 427.157166f,
+        431.967682f, 436.616302f, 441.107941f, 445.447723f, 449.640778f, 453.692291f,
+        457.607483f, 461.391388f, 465.049042f, 468.585449f, 472.00528f, 475.313171f,
+        478.51358f, 481.610901f, 484.609283f, 487.512695f, 490.325043f, 493.049927f,
+        495.690948f, 498.251434f, 500.73465f, 503.143677f, 505.481506f, 507.750885f,
+        509.954559f, 512.095093f, 514.174927f, 516.196411f, 518.161804f, 520.073181f,
+        521.932678f, 523.742188f, 525.503601f, 527.218628f, 528.123169f */
 					};
 
 					// Front Right wheel
@@ -988,6 +1325,16 @@ void  gpu_render_2d_overlay(void *display, int w, int h,
 						78.8f - 5.56f, 43.0f + 10.27f,
 						80.8f - 5.56f, 52.2f + 10.27f,
 						81.5f - 5.56f, 60.0f + 10.27f,
+						/* 514.755249, 503.943665, 493.414062, 483.186157,
+        473.275391, 463.693176, 454.447144, 445.541199, 436.976257, 428.750244,
+        420.858765, 413.295319, 406.051849, 399.118958, 392.48645, 386.143158,
+        380.07782, 374.278687, 368.73407, 363.432373, 358.362061, 353.511963,
+        348.871338, 344.429626, 340.176788, 336.103241, 332.199768, 328.457611,
+        324.8685, 321.42453, 318.118286, 314.942688, 311.891052, 308.957123,
+        306.134979, 303.418976, 300.803802, 298.284546, 295.856445, 293.515137,
+        291.256409, 289.076263, 286.971069, 284.937286, 282.971588, 281.070862,
+        279.232147, 277.452667, 275.729797, 274.061005, 272.443939, 270.876404,
+        269.356262, 267.88147, 266.450195, 265.060608, 261.365234 */
 						// 81.9f - 5.56f, 67.2f + 10.27f,
 					};
 
@@ -997,6 +1344,17 @@ void  gpu_render_2d_overlay(void *display, int w, int h,
 						28.0f + 5.56f, 84.8f - 6.85f,
 						25.6f + 5.56f, 91.6f - 6.85f,
 						21.5f + 5.56f, 99.5f - 6.85f,
+						/* 1068.958862, 1062.542725, 1056.01123,
+        1049.388916, 1042.699585, 1035.966187, 1029.210815, 1022.454163,
+        1015.715332, 1009.012085, 1002.360474, 995.774963, 989.26825,
+        982.851685, 976.534668, 970.325439, 964.230713, 958.255981, 952.405518,
+        946.682556, 941.089111, 935.626892, 930.296326, 925.097473, 920.029541,
+        915.091614, 910.282166, 905.599243, 901.040771, 896.604309, 892.287292,
+        888.086975, 884.00061, 880.025269, 876.157898, 872.39563, 868.735413,
+        865.174255, 861.70929, 858.337524, 855.05603, 851.862183, 848.752991,
+        845.725891, 842.778198, 839.90741, 837.110962, 834.386536, 831.731689,
+        829.144226, 826.621948, 824.16272, 821.764465, 819.425232, 817.143188,
+        814.916321, 813.24231 */
 					};
 
 					// Rear Right wheel
@@ -1005,6 +1363,16 @@ void  gpu_render_2d_overlay(void *display, int w, int h,
 						68.7f - 5.56f, 87.0f - 6.85f,
 						66.6f - 5.56f, 92.7f - 6.85f,
 						63.9f - 5.56f, 99.0f - 6.85f,
+						/* 503.751801, 494.712769, 485.865479, 477.221466,
+        468.790558, 460.580811, 452.598358, 444.8479, 437.332458, 430.053406,
+        423.010895, 416.203735, 409.629578, 403.285309, 397.166687, 391.269012,
+        385.586884, 380.114441, 374.845459, 369.773529, 364.891968, 360.194122,
+        355.673157, 351.322357, 347.135071, 343.104675, 339.224762, 335.489075,
+        331.89151, 328.426147, 325.087311, 321.869446, 318.767334, 315.77594,
+        312.89032, 310.105835, 307.418091, 304.822845, 302.31601, 299.893738,
+        297.552368, 295.288422, 293.098511, 290.979492, 288.928314, 286.942139,
+        285.018219, 283.153961, 281.346832, 279.594574, 277.894836, 276.245575,
+        274.644714, 273.090302, 271.580505, 270.113647, 266.664001 */
 					};
 
 					// gpu_render_draw_line(display, wheel_FL, _countof(wheel_FL), 0.65f, Color4::gold());
@@ -1265,7 +1633,7 @@ void  gpu_render_2d_overlay(void *display, int w, int h,
 
 		}
 	}
-
+	#endif
 	glFinish();
 }
 
@@ -1287,4 +1655,5 @@ void gpu_render_unlock(void *display)
 	eglMakeCurrent(pctx->egl_display, EGL_NO_SURFACE,
 		EGL_NO_SURFACE, EGL_NO_CONTEXT);
 }
+
 
